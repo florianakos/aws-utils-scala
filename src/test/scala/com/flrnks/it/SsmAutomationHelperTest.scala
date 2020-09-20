@@ -29,16 +29,16 @@ class SsmAutomationHelperTest extends AsyncFunSuite with Matchers with BeforeAnd
 
   test("able to craft start automation request") {
     val documentParameters = mutable.HashMap(
-      "SourceAmiId" -> List("ami-04137ed1a354f54c4").asJavaCollection,
-      "IamInstanceProfileName" -> List("ManagedInstanceProfile").asJavaCollection,
-      "AutomationAssumeRole" -> List("arn:aws:iam::{{global:ACCOUNT_ID}}:role/AutomationServiceRole").asJavaCollection,
-      "TargetAmiName" -> List("UpdateLinuxAmi_from_{{SourceAmiId}}_on_{{global:DATE_TIME}}").asJavaCollection,
-      "InstanceType" -> List("t2.micro").asJavaCollection,
-      "SubnetId" -> List("").asJavaCollection,
-      "PreUpdateScript" -> List("none").asJavaCollection,
-      "PostUpdateScript" -> List("none").asJavaCollection,
-      "IncludePackages" -> List("all").asJavaCollection,
-      "ExcludePackages" -> List("none").asJavaCollection).asJava
+      "SourceAmiId" -> List("ami-04137ed1a354f54c4").asJava,
+      "IamInstanceProfileName" -> List("ManagedInstanceProfile").asJava,
+      "AutomationAssumeRole" -> List("arn:aws:iam::{{global:ACCOUNT_ID}}:role/AutomationServiceRole").asJava,
+      "TargetAmiName" -> List("UpdateLinuxAmi_from_{{SourceAmiId}}_on_{{global:DATE_TIME}}").asJava,
+      "InstanceType" -> List("t2.micro").asJava,
+      "SubnetId" -> List("").asJava,
+      "PreUpdateScript" -> List("none").asJava,
+      "PostUpdateScript" -> List("none").asJava,
+      "IncludePackages" -> List("all").asJava,
+      "ExcludePackages" -> List("none").asJava).asJava
     ssmHelper.startDocumentWithParameters("AWS-UpdateLinuxAmi", documentParameters) map { execId =>
       execId.toString should fullyMatch regex """\b[0-9a-f]{8}\b-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-\b[0-9a-f]{12}\b"""
     }

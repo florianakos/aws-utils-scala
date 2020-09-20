@@ -4,6 +4,7 @@ import java.util
 
 import com.typesafe.scalalogging.LazyLogging
 import software.amazon.awssdk.auth.credentials.ProfileCredentialsProvider
+import software.amazon.awssdk.core.exception.SdkClientException
 import software.amazon.awssdk.regions.Region
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -27,18 +28,20 @@ case class SsmAutomationHelper(profile: String)(implicit ec: ExecutionContext) e
     .credentialsProvider(credentialsProvider)
     .build()
   
-  def startDocumentWithParameters(documentName: String, documentParameters: util.Map[String, util.Collection[String]]): Future[Unit] = {
+  def startDocumentWithParameters(documentName: String, documentParameters: java.util.Map[String, java.util.List[String]]): Future[Unit] = {
 
     executeAutomation(documentName, documentParameters)
       .flatMap(waitForAutomationToFinish)
       .map(_ => ())
       .recover {
         case e: SsmException =>
-          logger.warn(s"Failed to execute document, failed with error: ${e.getMessage}")
+          logger.warn(s"Failed to execute document, error message: ${e.getMessage}")
+        case e: SdkClientException =>
+          logger.warn(s"SDK failure, error message: ${e.getMessage}")
     }
   }
 
-  private def executeAutomation(documentName: String, parameters: java.util.Map[String,java.util.Collection[String]]): Future[String] = {
+  private def executeAutomation(documentName: String, parameters: java.util.Map[String,java.util.List[String]]): Future[String] = {
     logger.info(s"Going to kick off SSM orchestration document: $documentName")
     
     val startAutomationRequest = StartAutomationExecutionRequest.builder()
@@ -78,7 +81,7 @@ case class SsmAutomationHelper(profile: String)(implicit ec: ExecutionContext) e
           case AutomationExecutionStatus.SUCCESS =>
             logger.info(s"Query finished with status: $status")
           case status: AutomationExecutionStatus =>
-            logger.info(s"SSM Automation is has not yet finished, current status: $status, check #$retries.")
+            logger.info(s"SSM Automation execution status: $status, check #$retries.")
             Thread.sleep(if (retries <= 3) 2500 else if (retries <= 10) 5000 else 15000)
         }
         retries += 1
