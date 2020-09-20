@@ -11,4 +11,4 @@ The program can be compiled with `mvn package` and then run via `java -jar ...`.
 
 ## TODO
 
-...
+* add the implementation of CLI arg parser
