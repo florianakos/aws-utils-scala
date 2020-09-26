@@ -2,7 +2,7 @@ package com.flrnks.app
 
 import java.util
 import java.util.concurrent.Callable
-import com.flrnks.utils.SsmAutomationHelper
+import com.flrnks.utils.ssm.SsmAutomation
 import com.typesafe.scalalogging.LazyLogging
 import scala.collection.JavaConverters._
 import scala.concurrent.Await
@@ -11,6 +11,7 @@ import scala.concurrent.duration.DurationInt
 import picocli.CommandLine
 import picocli.CommandLine.{Command, Option, Parameters}
 
+import scala.util.Failure
 
 @Command(name = "SsmHelperApp",  version = Array("SsmHelper Scala App v0.0.1"),  mixinStandardHelpOptions = true,
   description = Array("Scala CLI app that can run SSM Automation documents"))
@@ -47,7 +48,7 @@ class SsmCliParser extends Callable[Unit] with LazyLogging {
     }
     
     try {
-      Await.result(SsmAutomationHelper(profileName).startDocumentWithParameters(documentName, process(parameters)), 10.minutes)
+      Await.result(SsmAutomation(profileName).startDocumentWithParameters(documentName, process(parameters)), 10.minutes)
     } catch {
       case e: Exception =>
         logger.error(s"SSM Execution failed with error message: ${e.getMessage}")
@@ -59,7 +60,7 @@ class SsmCliParser extends Callable[Unit] with LazyLogging {
 }
 
 
-object App extends App with LazyLogging  {
+object SsmCliApp extends App with LazyLogging  {
 
   System.exit(new CommandLine(new SsmCliParser()).execute(args: _*))
   

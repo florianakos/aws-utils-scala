@@ -1,32 +1,26 @@
-package com.flrnks.utils
-
-import java.util
+package com.flrnks.utils.ssm
 
 import com.typesafe.scalalogging.LazyLogging
 import software.amazon.awssdk.auth.credentials.ProfileCredentialsProvider
 import software.amazon.awssdk.core.exception.SdkClientException
 import software.amazon.awssdk.regions.Region
-
-import scala.concurrent.{ExecutionContext, Future}
-import software.amazon.awssdk.services.ssm.SsmClient
 import software.amazon.awssdk.services.cloudformation.CloudFormationClient
 import software.amazon.awssdk.services.cloudformation.model.DescribeStackResourcesRequest
-import software.amazon.awssdk.services.ssm.model.{AutomationExecutionStatus, GetAutomationExecutionRequest, InvalidAutomationExecutionParametersException, SsmException, StartAutomationExecutionRequest}
+import software.amazon.awssdk.services.ssm.SsmClient
+import software.amazon.awssdk.services.ssm.model.{AutomationExecutionStatus, GetAutomationExecutionRequest, SsmException, StartAutomationExecutionRequest}
+import scala.concurrent.{ExecutionContext, Future}
 
-import scala.collection.JavaConverters._
-
-case class SsmAutomationHelper(profile: String)(implicit ec: ExecutionContext) extends LazyLogging {
-
-  private val credentialsProvider = ProfileCredentialsProvider.create(profile)
-  private val ssmClient = SsmClient.builder()
-    .region(Region.EU_WEST_1)
-    .credentialsProvider(credentialsProvider)
-    .build()
+case class SsmAutomation(profile: String)(implicit ec: ExecutionContext) extends LazyLogging {
+  
+  private val ssmClient =  SsmClient.builder()
+      .credentialsProvider(ProfileCredentialsProvider.create(profile))
+      .region(Region.EU_WEST_1)
+      .build()
   
   private val cfClient = CloudFormationClient.builder()
-    .region(Region.EU_WEST_1)
-    .credentialsProvider(credentialsProvider)
-    .build()
+        .credentialsProvider(ProfileCredentialsProvider.create(profile))
+        .region(Region.EU_WEST_1)
+        .build()
   
   def startDocumentWithParameters(documentName: String, documentParameters: java.util.Map[String, java.util.List[String]]): Future[Unit] = {
 
@@ -34,6 +28,8 @@ case class SsmAutomationHelper(profile: String)(implicit ec: ExecutionContext) e
       .flatMap(waitForAutomationToFinish)
       .map(_ => ())
       .recover {
+        case e: SsmAutomationExecutionException =>
+          logger.warn(s"The automation execution failed: ${e.getMessage}")
         case e: SsmException =>
           logger.warn(s"Failed to execute document, error message: ${e.getMessage}")
         case e: SdkClientException =>
