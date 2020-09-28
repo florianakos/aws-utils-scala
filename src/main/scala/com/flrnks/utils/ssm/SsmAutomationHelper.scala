@@ -1,28 +1,33 @@
 package com.flrnks.utils.ssm
 
+import java.net.URI
+
+import com.typesafe.config.Config
 import com.typesafe.scalalogging.LazyLogging
-import software.amazon.awssdk.auth.credentials.ProfileCredentialsProvider
+import software.amazon.awssdk.auth.credentials.{AwsBasicCredentials, ProfileCredentialsProvider, StaticCredentialsProvider}
 import software.amazon.awssdk.core.exception.SdkClientException
 import software.amazon.awssdk.regions.Region
-import software.amazon.awssdk.services.cloudformation.CloudFormationClient
-import software.amazon.awssdk.services.cloudformation.model.DescribeStackResourcesRequest
 import software.amazon.awssdk.services.ssm.SsmClient
 import software.amazon.awssdk.services.ssm.model.{AutomationExecutionStatus, GetAutomationExecutionRequest, SsmException, StartAutomationExecutionRequest}
-import scala.concurrent.{ExecutionContext, Future}
 
-case class SsmAutomation(profile: String)(implicit ec: ExecutionContext) extends LazyLogging {
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
+
+class SsmAutomationHelper(profile: String, apiEndpoint: Option[String]) extends LazyLogging {
   
-  private val ssmClient =  SsmClient.builder()
+  private val ssmClient = apiEndpoint match {
+    case None => SsmClient.builder()
       .credentialsProvider(ProfileCredentialsProvider.create(profile))
       .region(Region.EU_WEST_1)
       .build()
+    case Some(localstackEndpoint) => SsmClient.builder()
+      .credentialsProvider(StaticCredentialsProvider
+        .create(AwsBasicCredentials.create("foo", "bar")))
+      .endpointOverride(URI.create(localstackEndpoint))
+      .build()
+  }
   
-  private val cfClient = CloudFormationClient.builder()
-        .credentialsProvider(ProfileCredentialsProvider.create(profile))
-        .region(Region.EU_WEST_1)
-        .build()
-  
-  def startDocumentWithParameters(documentName: String, documentParameters: java.util.Map[String, java.util.List[String]]): Future[Unit] = {
+  def runDocumentWithParameters(documentName: String, documentParameters: java.util.Map[String, java.util.List[String]]): Future[Unit] = {
 
     executeAutomation(documentName, documentParameters)
       .flatMap(waitForAutomationToFinish)
@@ -50,14 +55,6 @@ case class SsmAutomation(profile: String)(implicit ec: ExecutionContext) extends
       logger.info(s"Execution id: ${executionResponse.automationExecutionId()}")
       executionResponse.automationExecutionId()
     }
-  }
-  
-  def getOrchestrationDocumentName(stackName: String): String = {
-    cfClient.describeStackResources(DescribeStackResourcesRequest.builder()
-      .stackName(stackName)
-      .logicalResourceId("OrchestrationDocument")
-      .build()
-    ).stackResources().get(0).physicalResourceId()
   }
 
   private def waitForAutomationToFinish(executionId: String): Future[String] = {
@@ -87,4 +84,17 @@ case class SsmAutomation(profile: String)(implicit ec: ExecutionContext) extends
   
   def close(): Unit = ssmClient.close()
 
+}
+
+object SsmAutomationHelper {
+  
+  def newInstance(conf: Config): SsmAutomationHelper = {
+
+    val apiEndpoint = conf.getString("localstack.api.endpoint")
+
+    new SsmAutomationHelper(
+      conf.getString("aws.profile"),
+      if (apiEndpoint.trim.isEmpty) None else Some(apiEndpoint.trim)
+    )
+  }
 }
