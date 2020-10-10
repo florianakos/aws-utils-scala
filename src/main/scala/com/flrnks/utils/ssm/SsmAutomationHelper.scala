@@ -91,10 +91,9 @@ object SsmAutomationHelper {
   def newInstance(conf: Config): SsmAutomationHelper = {
 
     val apiEndpoint = conf.getString("localstack.api.endpoint")
+    val awsProfile = conf.getString("aws.profile")
 
-    new SsmAutomationHelper(
-      conf.getString("aws.profile"),
-      if (apiEndpoint.trim.isEmpty) None else Some(apiEndpoint.trim)
+    new SsmAutomationHelper(awsProfile, if (apiEndpoint.trim.isEmpty) None else Some(apiEndpoint.trim)
     )
   }
 }
