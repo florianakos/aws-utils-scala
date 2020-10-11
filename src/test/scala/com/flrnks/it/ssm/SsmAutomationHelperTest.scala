@@ -27,7 +27,7 @@ class SsmAutomationHelperTest extends AsyncFunSuite with LazyLogging with Matche
       15.minutes) should be ()
   }
 
-  test("can run automation document to stop EC2 instance") {
+  test("can run automation document to stop EC2 instance", Tag("AWS")) {
     Await.result(ssmHelper.runDocumentWithParameters("AWS-StopEC2Instance", parameters),
       15.minutes) should be ()
   }

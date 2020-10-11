@@ -59,8 +59,8 @@ class SsmAutomationHelper(profile: String, apiEndpoint: Option[String]) extends 
 
   private def waitForAutomationToFinish(executionId: String): Future[String] = {
     
-    val getExecutionRequest = GetAutomationExecutionRequest.builder()
-      .automationExecutionId(executionId).build()
+    val getExecutionRequest = 
+      GetAutomationExecutionRequest.builder().automationExecutionId(executionId).build()
     var status = AutomationExecutionStatus.IN_PROGRESS
 
     Future {
@@ -72,9 +72,9 @@ class SsmAutomationHelper(profile: String, apiEndpoint: Option[String]) extends 
           case AutomationExecutionStatus.CANCELLED | AutomationExecutionStatus.FAILED | AutomationExecutionStatus.TIMED_OUT =>
             throw SsmAutomationExecutionException(status, automationExecutionResponse.automationExecution.failureMessage)
           case AutomationExecutionStatus.SUCCESS =>
-            logger.info(s"Query finished with status: $status")
+            logger.info(s"Execution finished with final status: [$status]")
           case status: AutomationExecutionStatus =>
-            logger.info(s"SSM Automation execution status: $status, check #$retries.")
+            logger.info(s"Current status: [$status], retry counter: #$retries")
             Thread.sleep(if (retries <= 3) 2500 else if (retries <= 10) 5000 else 15000)
         }
         retries += 1

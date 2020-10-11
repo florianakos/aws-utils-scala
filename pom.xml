@@ -2,7 +2,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>com.flrnks</groupId>
   <artifactId>aws-utils-scala</artifactId>
-  <version>0.0.2</version>
+  <version>0.0.3</version>
   <name>${project.artifactId}</name>
   <description>Collection of classes used to help with accessing or creating AWS resources (in case of localstack testing)</description>
   <inceptionYear>2020</inceptionYear>
